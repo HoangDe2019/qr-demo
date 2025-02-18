@@ -19,22 +19,18 @@ QrScanner.listCameras(true).then(cameras => {
     }
 });
 
-navigator.mediaDevices.enumerateDevices().then(devices => {
-    devices.forEach(device => {
-        if (device.kind === "videoinput") {
-            console.log("Camera:", device.label, "ID:", device.deviceId);
-        }
-    });
-});
 
 function setResult(label, result) {
-    console.log(result.data);
-    label.textContent = result.data;
-    camQrResultTimestamp.textContent = new Date().toString();
-    label.style.color = 'teal';
-    clearTimeout(label.highlightTimeout);
-    label.highlightTimeout = setTimeout(() => label.style.color = 'inherit', 100);
+    const now = Date.now();
+    if (now - lastScanTime < 500) return; // Prevent excessive updates
+    lastScanTime = now;
+
+    requestAnimationFrame(() => {
+        label.textContent = result.data;
+        camQrResultTimestamp.textContent = new Date().toLocaleTimeString();
+    });
 }
+
 
 // ####### Web Cam Scanning #######
 
@@ -63,17 +59,12 @@ scanner.start().then(() => {
     // at the same time which can result in listCamera's unconstrained stream also being offered to the scanner.
     // Note that we can also start the scanner after listCameras, we just have it this way around in the demo to
     // start the scanner earlier.
-    QrScanner.listCameras(true).then(cameras => {
-        cameras.forEach(camera => {
-            const option = document.createElement('option');
-            option.value = camera.id;
-            option.text = camera.label;
-            camList.add(option);
-        });
-        if (cameras.length > 0) {
-            scanner.setCamera(cameras[0].id); // Select best camera
-        }
-    });
+    QrScanner.listCameras(true).then(cameras => cameras.forEach(camera => {
+        const option = document.createElement('option');
+        option.value = camera.id;
+        option.text = camera.label;
+        camList.add(option);
+    }));
 });
 
 QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera);
@@ -101,10 +92,14 @@ camList.addEventListener('change', event => {
     scanner.setCamera(event.target.value).then(updateFlashAvailability);
 });
 
+let flashToggleTimeout;
 flashToggle.addEventListener('click', () => {
-    scanner.toggleFlash().then(() => {
-        flashState.textContent = scanner.isFlashOn() ? 'on' : 'off';
-    });
+    clearTimeout(flashToggleTimeout);
+    flashToggleTimeout = setTimeout(() => {
+        scanner.toggleFlash().then(() => {
+            flashState.textContent = scanner.isFlashOn() ? 'on' : 'off';
+        });
+    }, 300); // Delay to prevent UI lag
 });
 
 document.getElementById('start-button').addEventListener('click', () => {
