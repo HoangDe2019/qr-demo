@@ -11,7 +11,7 @@ const camQrResult = document.getElementById('cam-qr-result');
 const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
 const fileSelector = document.getElementById('file-selector');
 const fileQrResult = document.getElementById('file-qr-result');
-
+const resetBtn = document.getElementById('reset-button');
 
 QrScanner.listCameras(true).then(cameras => {
     if (cameras.length > 0) {
@@ -19,6 +19,7 @@ QrScanner.listCameras(true).then(cameras => {
     }
 });
 
+let lastScanTime;
 
 function setResult(label, result) {
     const now = Date.now();
@@ -111,15 +112,21 @@ document.getElementById('stop-button').addEventListener('click', () => {
 });
 
 // ####### File Scanning #######
-
+let scannedResult = null; // Store the scanned result
 fileSelector.addEventListener('change', event => {
     const file = fileSelector.files[0];
     if (!file) {
         return;
     }
     QrScanner.scanImage(file, { returnDetailedScanResult: true })
-        .then(result => setResult(fileQrResult, result))
-        .catch(e => setResult(fileQrResult, { data: e || 'No QR code found.' }));
+        .then(result => {
+            scannedResult = result; // Save the result
+            setResult(fileQrResult, result); // Display the result
+        })
+        .catch(e => {
+            scannedResult = null; // Clear the result if scanning fails
+            setResult(fileQrResult, { data: e || 'No QR code found.' });
+        });
 });
 
 const constraints = {
@@ -130,3 +137,10 @@ const constraints = {
 navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => video.srcObject = stream)
     .catch(error => console.error("Camera access denied:", error));
+
+
+resetBtn.addEventListener('click', () => {
+    scannedResult = null; // Clear the stored result
+    fileQrResult.textContent = ''; // Clear displayed result
+    fileSelector.value = ''; // Reset the file input
+});
