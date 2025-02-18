@@ -1,7 +1,7 @@
 let qrScanner;
 let scanFailures = 0;
 
-// 🟢 Initialize QR Scanner
+// 🟢 Start QR Scanner
 function startQRScanner() {
     Html5Qrcode.getCameras()
         .then((cameras) => {
@@ -14,9 +14,9 @@ function startQRScanner() {
             scanFailures = 0; // Reset failure count
 
             qrScanner.start({ facingMode: "environment" }, // Use back camera
-                { fps: 10, qrbox: { width: 250, height: 250 } },
+                { fps: 15, qrbox: { width: 300, height: 300 } }, // Larger QR scan area
                 handleScanSuccess,
-                (error) => handleScanFailure(error, scanFailures++)
+                (error) => handleScanFailure(error)
             );
         })
         .catch(() => displayMessage("❌ Quyền truy cập camera bị từ chối!", "error"));
@@ -24,20 +24,24 @@ function startQRScanner() {
 
 // ✅ Handle Successful Scan
 function handleScanSuccess(decodedText) {
-    try {
-        let qrData = JSON.parse(decodedText);
-        displayMessage("✅ Mã QR hợp lệ!", "success");
+    scanFailures = 0; // Reset failure count
+
+    // ⚠️ CCCD QR may contain plain text instead of JSON, so we parse manually
+    let qrData = parseCCCDText(decodedText);
+
+    if (qrData) {
+        displayMessage("✅ Mã QR CCCD hợp lệ!", "success");
         fillCCCDInfo(qrData);
-    } catch (error) {
-        console.warn("Invalid QR Data", error);
+    } else {
         displayMessage("❌ QR Code không hợp lệ!", "error");
     }
+
     stopQRScanner();
 }
 
 // ❌ Handle Scan Failures
-function handleScanFailure(error, scanFailures) {
-    console.warn("Scan failed:", error);
+function handleScanFailure(error) {
+    scanFailures++;
 
     if (scanFailures >= 5) {
         displayMessage("⚠️ Hãy di chuyển điện thoại gần hơn với mã QR!", "warning");
@@ -53,7 +57,24 @@ function stopQRScanner() {
     }
 }
 
-// 🖼 OCR - Extract Text from Image & Clear Previous File
+// 📌 Extract CCCD Information from QR Text
+function parseCCCDText(text) {
+    let fullNameMatch = text.match(/Họ và tên[:\s]+([^\n]+)/i);
+    let dobMatch = text.match(/Ngày sinh[:\s]+([\d/]+)/i);
+    let idMatch = text.match(/(?:Số CCCD|Số CMND)[:\s]+([\d]+)/i);
+
+    if (fullNameMatch && dobMatch && idMatch) {
+        return {
+            fullName: fullNameMatch[1].trim(),
+            dob: dobMatch[1].trim(),
+            idNumber: idMatch[1].trim(),
+        };
+    }
+
+    return null;
+}
+
+// 🖼 OCR - Extract Text from Image
 document.getElementById("imageUpload").addEventListener("change", function(event) {
     let image = event.target.files[0];
     if (!image) return;
@@ -66,36 +87,30 @@ document.getElementById("imageUpload").addEventListener("change", function(event
         Tesseract.recognize(reader.result, "vie", { logger: (m) => console.log(m) })
             .then(({ data: { text } }) => {
                 document.getElementById("ocrResult").value = text.trim();
-                extractInfo(text);
+                let extractedData = parseCCCDText(text);
+                if (extractedData) {
+                    fillCCCDInfo(extractedData);
+                } else {
+                    displayMessage("❌ Lỗi nhận diện văn bản!", "error");
+                }
             })
             .catch(() => displayMessage("❌ Lỗi nhận diện văn bản!", "error"));
     };
     reader.readAsDataURL(image);
 });
 
-// 📌 Fill CCCD Information from QR Code
-function fillCCCDInfo(qrData) {
-    document.getElementById("fullName").textContent = qrData["fullName"] || "---";
-    document.getElementById("dob").textContent = qrData["dob"] || "---";
-    document.getElementById("idNumber").textContent = qrData["idNumber"] || "---";
-}
-
-// 🟡 Extract Information from OCR Text
-function extractInfo(text) {
-    let fullNameMatch = text.match(/Họ và tên[:\s]+([^\n]+)/i);
-    let dobMatch = text.match(/Ngày sinh[:\s]+([\d/]+)/i);
-    let idMatch = text.match(/(?:Số CCCD|Số CMND)[:\s]+([\d]+)/i);
-
-    document.getElementById("fullName").textContent = fullNameMatch ? fullNameMatch[1].trim() : "---";
-    document.getElementById("dob").textContent = dobMatch ? dobMatch[1].trim() : "---";
-    document.getElementById("idNumber").textContent = idMatch ? idMatch[1].trim() : "---";
-}
-
 // 🔔 Display UI Messages
 function displayMessage(message, type) {
     let messageBox = document.getElementById("qrResult");
     messageBox.textContent = message;
     messageBox.className = `alert alert-${type}`;
+}
+
+// 📌 Fill CCCD Information into UI
+function fillCCCDInfo(qrData) {
+    document.getElementById("fullName").textContent = qrData.fullName || "---";
+    document.getElementById("dob").textContent = qrData.dob || "---";
+    document.getElementById("idNumber").textContent = qrData.idNumber || "---";
 }
 
 // 🚀 Event Listeners
