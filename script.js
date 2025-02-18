@@ -12,6 +12,21 @@ const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
 const fileSelector = document.getElementById('file-selector');
 const fileQrResult = document.getElementById('file-qr-result');
 
+
+QrScanner.listCameras(true).then(cameras => {
+    if (cameras.length > 0) {
+        scanner.setCamera(cameras[0].id); // Use the first (default) camera
+    }
+});
+
+navigator.mediaDevices.enumerateDevices().then(devices => {
+    devices.forEach(device => {
+        if (device.kind === "videoinput") {
+            console.log("Camera:", device.label, "ID:", device.deviceId);
+        }
+    });
+});
+
 function setResult(label, result) {
     console.log(result.data);
     label.textContent = result.data;
@@ -30,6 +45,9 @@ const scanner = new QrScanner(video, result => setResult(camQrResult, result), {
     },
     highlightScanRegion: true,
     highlightCodeOutline: true,
+    returnDetailedScanResult: true, // Get more details about the QR detection
+    maxScansPerSecond: 15, // Increase scan rate for faster detection
+    preferredResolution: 1920, // Higher resolution for better accuracy
 });
 
 const updateFlashAvailability = () => {
@@ -45,12 +63,17 @@ scanner.start().then(() => {
     // at the same time which can result in listCamera's unconstrained stream also being offered to the scanner.
     // Note that we can also start the scanner after listCameras, we just have it this way around in the demo to
     // start the scanner earlier.
-    QrScanner.listCameras(true).then(cameras => cameras.forEach(camera => {
-        const option = document.createElement('option');
-        option.value = camera.id;
-        option.text = camera.label;
-        camList.add(option);
-    }));
+    QrScanner.listCameras(true).then(cameras => {
+        cameras.forEach(camera => {
+            const option = document.createElement('option');
+            option.value = camera.id;
+            option.text = camera.label;
+            camList.add(option);
+        });
+        if (cameras.length > 0) {
+            scanner.setCamera(cameras[0].id); // Select best camera
+        }
+    });
 });
 
 QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera);
@@ -79,7 +102,9 @@ camList.addEventListener('change', event => {
 });
 
 flashToggle.addEventListener('click', () => {
-    scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
+    scanner.toggleFlash().then(() => {
+        flashState.textContent = scanner.isFlashOn() ? 'on' : 'off';
+    });
 });
 
 document.getElementById('start-button').addEventListener('click', () => {
@@ -101,3 +126,12 @@ fileSelector.addEventListener('change', event => {
         .then(result => setResult(fileQrResult, result))
         .catch(e => setResult(fileQrResult, { data: e || 'No QR code found.' }));
 });
+
+const constraints = {
+    video: { facingMode: "environment" } // Use the rear camera for better scanning
+};
+
+
+navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => video.srcObject = stream)
+    .catch(error => console.error("Camera access denied:", error));
