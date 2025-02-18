@@ -1,0 +1,1 @@
+{"version":3,"file":"strip-filename.js","sourceRoot":"","sources":["../../src/strip-filename.ts"],"names":[],"mappings":";AAAA;;;;;;;;;;;;;;GAcG;;AAEH;;GAEG;AACH,SAAwB,aAAa,CAAC,IAAwB;IAC5D,IAAI,CAAC,IAAI;QAAE,OAAO,EAAE,CAAC;IACrB,MAAM,KAAK,GAAG,IAAI,CAAC,WAAW,CAAC,GAAG,CAAC,CAAC;IACpC,OAAO,IAAI,CAAC,KAAK,CAAC,CAAC,EAAE,KAAK,GAAG,CAAC,CAAC,CAAC;AAClC,CAAC;AAJD,gCAIC"}

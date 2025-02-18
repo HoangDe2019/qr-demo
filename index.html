@@ -4,77 +4,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quét Thẻ Thông Tin Cá Nhân</title>
-    <link rel="stylesheet" href="./bootstrap.min.css">
-    <link rel="stylesheet" href="styles.css">
-    <script src="./qrcode.min.js"></script>
-    <script src="./tesseract.min.js"></script>
+    <title>Demo Quét Mã QR</title>
+    <!-- Bao gồm Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        .container {
+            max-width: 1200px;
+        }
+
+        hr {
+            margin-top: 32px;
+        }
+
+        .form-select,
+        .form-check-label,
+        .btn {
+            width: 100%;
+        }
+
+        .row.mb-5 {
+            margin-bottom: 2rem;
+        }
+
+        .form-check-label {
+            margin-left: 10px;
+        }
+
+        .video-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .video-container video {
+            width: 100%;
+            border: 1px solid #ccc;
+        }
+
+        .section-header {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .custom-button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-outline-primary {
+            width: 100%;
+        }
+
+        .highlight-style-select,
+        .inversion-mode-select {
+            width: auto;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container mt-4">
-        <h2 class="text-center mb-3">📷 Quét Thẻ Thông Tin Cá Nhân</h2>
+    <div class="container mt-5">
+        <!-- Header Section -->
+        <h1 class="text-center mb-4">Demo Quét Mã QR</h1>
 
-        <!-- Camera QR Code Scanner -->
-        <div class="card p-3 shadow">
-            <h4>🔍 Quét Mã QR</h4>
-            <div id="reader" class="mb-3"></div>
-            <p><strong>Kết Quả QR:</strong> <span id="qrResult" class="text-primary">Đang chờ...</span></p>
-            <button id="startScan" class="btn btn-success">📸 Bắt đầu quét</button>
-            <button id="stopScan" class="btn btn-danger">⏹ Dừng quét</button>
+        <!-- Webcam Scanning Section -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <h3 class="section-header">Quét từ Webcam:</h3>
+                <div id="video-container" class="video-container">
+                    <video id="qr-video"></video>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <label class="me-2">Chọn kiểu đánh dấu</label>
+                    <select id="scan-region-highlight-style-select" class="form-select highlight-style-select">
+                        <option value="default-style">Kiểu mặc định</option>
+                        <option value="example-style-1">Kiểu tùy chỉnh 1</option>
+                        <option value="example-style-2">Kiểu tùy chỉnh 2</option>
+                    </select>
+                </div>
+                <div class="mt-3 form-check">
+                    <input id="show-scan-region" type="checkbox" class="form-check-input">
+                    <label class="form-check-label" for="show-scan-region">Hiển thị vùng quét canvas</label>
+                </div>
+                <div class="mt-3">
+                    <select id="inversion-mode-select" class="form-select inversion-mode-select">
+                        <option value="original">Quét màu gốc (QR đen trên nền sáng)</option>
+                        <option value="invert">Quét với màu đảo ngược (QR sáng trên nền tối)</option>
+                        <option value="both">Quét cả hai</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Camera Settings and Results -->
+            <div class="col-md-6">
+                <h4 class="section-header">Cài đặt Camera</h4>
+                <div>
+                    <b>Thiết bị có camera: </b><span id="cam-has-camera"></span>
+                </div>
+                <div>
+                    <b>Camera ưa thích:</b>
+                    <select id="cam-list" class="form-select">
+                        <option value="environment" selected>Camera phía sau (mặc định)</option>
+                        <option value="user">Camera phía trước</option>
+                    </select>
+                </div>
+                <div>
+                    <b>Camera có đèn flash: </b><span id="cam-has-flash"></span>
+                </div>
+                <button id="flash-toggle" class="btn btn-outline-primary mt-2">📸 Đèn flash: <span
+                        id="flash-state">tắt</span></button>
+
+                <hr>
+
+                <div>
+                    <b>Mã QR phát hiện: </b><span id="cam-qr-result">Chưa có</span>
+                </div>
+                <div>
+                    <b>Phát hiện lần cuối vào: </b><span id="cam-qr-result-timestamp"></span>
+                </div>
+                <div class="custom-button-group mt-3">
+                    <button id="start-button" class="btn btn-success">Bắt đầu</button>
+                    <button id="stop-button" class="btn btn-danger ms-2">Dừng</button>
+                </div>
+            </div>
         </div>
 
-        <!-- OCR Image Upload -->
-        <div class="card p-3 shadow mt-4">
-            <h4>📄 Nhận diện văn bản từ hình ảnh</h4>
-            <input type="file" id="imageUpload" class="form-control mb-2" accept="image/*">
-            <p><strong>Thông tin trích xuất:</strong></p>
-            <textarea id="ocrResult" class="form-control" rows="4" placeholder="Văn bản từ ảnh sẽ hiển thị tại đây..."></textarea>
-
-            <style>
-                .formatted-text {
-                    font-family: Arial, sans-serif;
-                    /* Standard readable font */
-                    font-size: 16px;
-                    /* Adjust text size */
-                    line-height: 1.5;
-                    /* Better spacing */
-                    white-space: pre-wrap;
-                    /* Preserve line breaks */
-                    word-wrap: break-word;
-                    /* Prevent overflow */
-                    padding: 10px;
-                    /* Space inside textarea */
-                    background-color: #f9f9f9;
-                    /* Light background */
-                    border: 1px solid #ccc;
-                    /* Subtle border */
-                    border-radius: 5px;
-                    /* Rounded corners */
-                }
-            </style>
-        </div>
-
-        <!-- Display Card Information -->
-        <div class="card p-3 shadow mt-4">
-            <h4>📋 Chi tiết thông tin thẻ</h4>
-            <table class="table table-bordered">
-                <tbody>
-                    <tr>
-                        <th>👤 Họ và tên:</th>
-                        <td id="fullName">---</td>
-                    </tr>
-                    <tr>
-                        <th>🎂 Ngày sinh:</th>
-                        <td id="dob">---</td>
-                    </tr>
-                    <tr>
-                        <th>📇 Số ID:</th>
-                        <td id="idNumber">---</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <!-- File Scanning Section -->
+        <h3 class="section-header">Quét từ File:</h3>
+        <input type="file" id="file-selector" class="form-control mb-3">
+        <b>Mã QR phát hiện: </b><span id="file-qr-result">Chưa có</span>
     </div>
 
     <script src="./script.js"></script>

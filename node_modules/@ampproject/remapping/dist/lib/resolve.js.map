@@ -1,0 +1,1 @@
+{"version":3,"file":"resolve.js","sourceRoot":"","sources":["../../src/resolve.ts"],"names":[],"mappings":";AAAA;;;;;;;;;;;;;;GAcG;;;;;AAEH,0EAAiD;AAEjD,SAAwB,OAAO,CAAC,KAAa,EAAE,IAAwB;IACrE,gEAAgE;IAChE,uEAAuE;IACvE,8HAA8H;IAC9H,IAAI,IAAI,IAAI,CAAC,IAAI,CAAC,QAAQ,CAAC,GAAG,CAAC;QAAE,IAAI,IAAI,GAAG,CAAC;IAE7C,OAAO,qBAAU,CAAC,KAAK,EAAE,IAAI,CAAC,CAAC;AACjC,CAAC;AAPD,0BAOC"}
