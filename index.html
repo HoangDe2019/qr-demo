@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quét Thẻ Thông Tin Cá Nhân</title>
     <link rel="stylesheet" href="./bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
-	<script src="./qrcode.min.js"></script>
+    <script src="./qrcode.min.js"></script>
     <script src="./tesseract.min.js"></script>
 </head>
+
 <body>
     <div class="container mt-4">
         <h2 class="text-center mb-3">📷 Quét Thẻ Thông Tin Cá Nhân</h2>
@@ -28,20 +30,29 @@
             <input type="file" id="imageUpload" class="form-control mb-2" accept="image/*">
             <p><strong>Thông tin trích xuất:</strong></p>
             <textarea id="ocrResult" class="form-control" rows="4" placeholder="Văn bản từ ảnh sẽ hiển thị tại đây..."></textarea>
-			
-			<style>
-				.formatted-text {
-					font-family: Arial, sans-serif; /* Standard readable font */
-					font-size: 16px; /* Adjust text size */
-					line-height: 1.5; /* Better spacing */
-					white-space: pre-wrap; /* Preserve line breaks */
-					word-wrap: break-word; /* Prevent overflow */
-					padding: 10px; /* Space inside textarea */
-					background-color: #f9f9f9; /* Light background */
-					border: 1px solid #ccc; /* Subtle border */
-					border-radius: 5px; /* Rounded corners */
-				}
-			</style>
+
+            <style>
+                .formatted-text {
+                    font-family: Arial, sans-serif;
+                    /* Standard readable font */
+                    font-size: 16px;
+                    /* Adjust text size */
+                    line-height: 1.5;
+                    /* Better spacing */
+                    white-space: pre-wrap;
+                    /* Preserve line breaks */
+                    word-wrap: break-word;
+                    /* Prevent overflow */
+                    padding: 10px;
+                    /* Space inside textarea */
+                    background-color: #f9f9f9;
+                    /* Light background */
+                    border: 1px solid #ccc;
+                    /* Subtle border */
+                    border-radius: 5px;
+                    /* Rounded corners */
+                }
+            </style>
         </div>
 
         <!-- Display Card Information -->
@@ -49,14 +60,24 @@
             <h4>📋 Chi tiết thông tin thẻ</h4>
             <table class="table table-bordered">
                 <tbody>
-                    <tr><th>👤 Họ và tên:</th> <td id="fullName">---</td></tr>
-                    <tr><th>🎂 Ngày sinh:</th> <td id="dob">---</td></tr>
-                    <tr><th>📇 Số ID:</th> <td id="idNumber">---</td></tr>
+                    <tr>
+                        <th>👤 Họ và tên:</th>
+                        <td id="fullName">---</td>
+                    </tr>
+                    <tr>
+                        <th>🎂 Ngày sinh:</th>
+                        <td id="dob">---</td>
+                    </tr>
+                    <tr>
+                        <th>📇 Số ID:</th>
+                        <td id="idNumber">---</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 </body>
+
 </html>
