@@ -6,8 +6,8 @@
     <title>Quét Thẻ Thông Tin Cá Nhân</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+	<script src="./qrcode.min.js"></script>
+    <script src="./tesseract.min.js"></script>
 </head>
 <body>
     <div class="container mt-4">
@@ -28,6 +28,20 @@
             <input type="file" id="imageUpload" class="form-control mb-2" accept="image/*">
             <p><strong>Thông tin trích xuất:</strong></p>
             <textarea id="ocrResult" class="form-control" rows="4" placeholder="Văn bản từ ảnh sẽ hiển thị tại đây..."></textarea>
+			
+			<style>
+				.formatted-text {
+					font-family: Arial, sans-serif; /* Standard readable font */
+					font-size: 16px; /* Adjust text size */
+					line-height: 1.5; /* Better spacing */
+					white-space: pre-wrap; /* Preserve line breaks */
+					word-wrap: break-word; /* Prevent overflow */
+					padding: 10px; /* Space inside textarea */
+					background-color: #f9f9f9; /* Light background */
+					border: 1px solid #ccc; /* Subtle border */
+					border-radius: 5px; /* Rounded corners */
+				}
+			</style>
         </div>
 
         <!-- Display Card Information -->
