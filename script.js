@@ -12,6 +12,12 @@ const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
 const fileSelector = document.getElementById('file-selector');
 const fileQrResult = document.getElementById('file-qr-result');
 const resetBtn = document.getElementById('reset-button');
+const qrResultsTable = document.getElementById('qr-results-table').getElementsByTagName('tbody')[0];
+const startBtn = document.getElementById('start-button');
+
+let scanCount = 0;
+const maxScanCount = 10;
+let lastScanTime;
 
 QrScanner.listCameras(true).then(cameras => {
     if (cameras.length > 0) {
@@ -19,17 +25,34 @@ QrScanner.listCameras(true).then(cameras => {
     }
 });
 
-let lastScanTime;
 
 function setResult(label, result) {
     const now = Date.now();
     if (now - lastScanTime < 500) return; // Prevent excessive updates
     lastScanTime = now;
 
-    requestAnimationFrame(() => {
-        label.textContent = result.data;
-        camQrResultTimestamp.textContent = new Date().toLocaleTimeString();
-    });
+    // Add the result to the table
+    const row = qrResultsTable.insertRow();
+    const cellIndex = row.insertCell(0);
+    const cellQrCode = row.insertCell(1);
+    const cellTimestamp = row.insertCell(2);
+
+    cellIndex.textContent = scanCount;
+    cellQrCode.textContent = result.data;
+    cellTimestamp.textContent = new Date().toLocaleTimeString();
+
+    // Update QR result on the UI
+    camQrResult.textContent = result.data;
+    camQrResultTimestamp.textContent = new Date().toLocaleTimeString();
+
+    scanCount++;
+
+    // If scan count reaches 10, stop the camera and disable further scans
+    if (scanCount >= maxScanCount) {
+        scanner.stop();
+        alert("Maximum scan limit reached. Please reset to scan again.");
+        startBtn.disabled = false;
+    }
 }
 
 
@@ -144,15 +167,17 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         .catch(error => {
             console.error("Camera access error:", error);
             alert("Unable to access camera. Please ensure you have the necessary permissions.");
-            // Optionally switch to file scanning mode or show an alternative UI.
         });
 } else {
     alert("Your browser does not support camera access.");
-    // Optionally, provide a fallback like allowing users to scan a file.
 }
-
 resetBtn.addEventListener('click', () => {
     scannedResult = null; // Clear the stored result
     fileQrResult.textContent = ''; // Clear displayed result
     fileSelector.value = ''; // Reset the file input
+
+    scanCount = 0; // Reset scan count
+    qrResultsTable.innerHTML = ''; // Clear the table
+    startBtn.disabled = false; // Enable the start button
+    scanner.start(); // Restart the scanner
 });
