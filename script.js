@@ -22,10 +22,31 @@ const maxScanCount = 10;
 let lastScanTime;
 let scannedResult = null;
 
+// Check if the device has cameras
+navigator.mediaDevices.enumerateDevices().then(devices => {
+    const cameras = devices.filter(device => device.kind === 'videoinput');
+    const hasCamera = cameras.length > 0;
+
+    // Display camera information
+    camHasCamera.textContent = hasCamera ? 'Có' : 'Không';
+    camHasFlash.textContent = cameras.some(device => device.getCapabilities && device.getCapabilities().torch) ? 'Có' : 'Không';
+
+    // Populate the camera list
+    cameras.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || `Camera ${index + 1}`;
+        camList.appendChild(option);
+    });
+}).catch(err => {
+    console.error('Error enumerating devices:', err);
+    camHasCamera.textContent = 'Không thể phát hiện thiết bị camera';
+});
+
 // Functions
 const updateFlashAvailability = () => {
     scanner.hasFlash().then(hasFlash => {
-        camHasFlash.textContent = hasFlash ? "Yes" : "No";
+        camHasFlash.textContent = hasFlash ? "Có" : "Không";
         flashToggle.style.display = hasFlash ? 'inline-block' : 'none';
     });
 };
@@ -102,14 +123,21 @@ camList.addEventListener('change', event => {
 });
 
 // Toggle flash
-let flashToggleTimeout;
 flashToggle.addEventListener('click', () => {
-    clearTimeout(flashToggleTimeout);
-    flashToggleTimeout = setTimeout(() => {
-        scanner.toggleFlash().then(() => {
-            flashState.textContent = scanner.isFlashOn() ? 'on' : 'off';
-        });
-    }, 300); // Delay to prevent UI lag
+    const stream = videoContainer.srcObject;
+    if (stream && stream.getVideoTracks().length > 0) {
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+            const isFlashOn = flashState.textContent === 'bật';
+            track.applyConstraints({ advanced: [{ torch: !isFlashOn }] })
+                .then(() => {
+                    flashState.textContent = isFlashOn ? 'tắt' : 'bật';
+                }).catch(err => {
+                    console.error('Error toggling flash:', err);
+                });
+        }
+    } // Delay to prevent UI lag
 });
 
 // Handle start/stop buttons
