@@ -1,5 +1,6 @@
 import QrScanner from "./qr-scanner.min.js";
 
+// DOM elements
 const video = document.getElementById('qr-video');
 const videoContainer = document.getElementById('video-container');
 const camHasCamera = document.getElementById('cam-has-camera');
@@ -15,18 +16,21 @@ const resetBtn = document.getElementById('reset-button');
 const qrResultsTable = document.getElementById('qr-results-table').getElementsByTagName('tbody')[0];
 const startBtn = document.getElementById('start-button');
 
+// Variables
 let scanCount = 0;
 const maxScanCount = 10;
 let lastScanTime;
+let scannedResult = null;
 
-QrScanner.listCameras(true).then(cameras => {
-    if (cameras.length > 0) {
-        scanner.setCamera(cameras[0].id); // Use the first (default) camera
-    }
-});
+// Functions
+const updateFlashAvailability = () => {
+    scanner.hasFlash().then(hasFlash => {
+        camHasFlash.textContent = hasFlash ? "Yes" : "No";
+        flashToggle.style.display = hasFlash ? 'inline-block' : 'none';
+    });
+};
 
-
-function setResult(label, result) {
+const setResult = (element, result) => {
     const now = Date.now();
     if (now - lastScanTime < 500) return; // Prevent excessive updates
     lastScanTime = now;
@@ -42,80 +46,62 @@ function setResult(label, result) {
     cellTimestamp.textContent = new Date().toLocaleTimeString();
 
     // Update QR result on the UI
-    camQrResult.textContent = result.data;
+    element.textContent = result.data;
     camQrResultTimestamp.textContent = new Date().toLocaleTimeString();
 
     scanCount++;
 
-    // If scan count reaches 10, stop the camera and disable further scans
+    // Stop the scanner if max scan count reached
     if (scanCount >= maxScanCount) {
         scanner.stop();
         alert("Maximum scan limit reached. Please reset to scan again.");
         startBtn.disabled = false;
     }
-}
+};
 
-
-// ####### Web Cam Scanning #######
-
+// Web Cam Scanning
 const scanner = new QrScanner(video, result => setResult(camQrResult, result), {
     onDecodeError: error => {
-        camQrResult.textContent = error;
-        camQrResult.style.color = 'inherit';
+        camQrResult.textContent = `Error: ${error}`;
+        camQrResult.style.color = 'red';
     },
     highlightScanRegion: true,
     highlightCodeOutline: true,
-    returnDetailedScanResult: true, // Get more details about the QR detection
+    returnDetailedScanResult: true, // Return detailed scan result
     maxScansPerSecond: 15, // Increase scan rate for faster detection
-    preferredResolution: 1920, // Higher resolution for better accuracy
+    preferredResolution: 1920, // High resolution for better accuracy
 });
 
-const updateFlashAvailability = () => {
-    scanner.hasFlash().then(hasFlash => {
-        camHasFlash.textContent = hasFlash;
-        flashToggle.style.display = hasFlash ? 'inline-block' : 'none';
+// Initialize Camera
+const initCamera = () => {
+    QrScanner.listCameras(true).then(cameras => {
+        if (cameras.length > 0) {
+            scanner.setCamera(cameras[0].id); // Use the first (default) camera
+            cameras.forEach(camera => {
+                const option = document.createElement('option');
+                option.value = camera.id;
+                option.text = camera.label;
+                camList.appendChild(option);
+            });
+        } else {
+            alert("No cameras found.");
+        }
     });
 };
 
-scanner.start().then(() => {
-    updateFlashAvailability();
-    // List cameras after the scanner started to avoid listCamera's stream and the scanner's stream being requested
-    // at the same time which can result in listCamera's unconstrained stream also being offered to the scanner.
-    // Note that we can also start the scanner after listCameras, we just have it this way around in the demo to
-    // start the scanner earlier.
-    QrScanner.listCameras(true).then(cameras => cameras.forEach(camera => {
-        const option = document.createElement('option');
-        option.value = camera.id;
-        option.text = camera.label;
-        camList.add(option);
-    }));
-});
+// Start Scanner
+const startScanner = () => {
+    scanner.start().then(() => {
+        updateFlashAvailability();
+    });
+};
 
-QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera);
-
-// for debugging
-window.scanner = scanner;
-
-document.getElementById('scan-region-highlight-style-select').addEventListener('change', (e) => {
-    videoContainer.className = e.target.value;
-    scanner._updateOverlay(); // reposition the highlight because style 2 sets position: relative
-});
-
-document.getElementById('show-scan-region').addEventListener('change', (e) => {
-    const input = e.target;
-    const label = input.parentNode;
-    label.parentNode.insertBefore(scanner.$canvas, label.nextSibling);
-    scanner.$canvas.style.display = input.checked ? 'block' : 'none';
-});
-
-document.getElementById('inversion-mode-select').addEventListener('change', event => {
-    scanner.setInversionMode(event.target.value);
-});
-
+// Handle camera switch
 camList.addEventListener('change', event => {
     scanner.setCamera(event.target.value).then(updateFlashAvailability);
 });
 
+// Toggle flash
 let flashToggleTimeout;
 flashToggle.addEventListener('click', () => {
     clearTimeout(flashToggleTimeout);
@@ -126,43 +112,43 @@ flashToggle.addEventListener('click', () => {
     }, 300); // Delay to prevent UI lag
 });
 
-document.getElementById('start-button').addEventListener('click', () => {
-    scanner.start();
-});
-
+// Handle start/stop buttons
+startBtn.addEventListener('click', startScanner);
 document.getElementById('stop-button').addEventListener('click', () => {
     scanner.stop();
 });
 
-// ####### File Scanning #######
-let scannedResult = null; // Store the scanned result
-fileSelector.addEventListener('change', event => {
-    const file = fileSelector.files[0];
-    if (!file) {
-        return;
-    }
+// File Scanning
+const handleFileScan = (file) => {
     QrScanner.scanImage(file, { returnDetailedScanResult: true })
         .then(result => {
-            scannedResult = result; // Save the result
-            setResult(fileQrResult, result); // Display the result
+            scannedResult = result;
+            setResult(fileQrResult, result); // Display result
         })
         .catch(e => {
-            scannedResult = null; // Clear the result if scanning fails
-            setResult(fileQrResult, { data: e || 'No QR code found.' });
+            scannedResult = null;
+            setResult(fileQrResult, { data: `Error: ${e || 'No QR code found'}` });
         });
+};
+
+fileSelector.addEventListener('change', event => {
+    const file = fileSelector.files[0];
+    if (file) handleFileScan(file);
 });
 
+// Camera Constraints
 const constraints = {
-    facingMode: { ideal: "environment" }, // Prefer rear camera, fallback to front camera
+    facingMode: { ideal: "environment" }, // Prefer rear camera
     width: { ideal: 1280 },
     height: { ideal: 720 }
 };
 
-
+// Access the camera and start the scanner
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             video.srcObject = stream;
+            initCamera(); // Initialize cameras once stream is available
         })
         .catch(error => {
             console.error("Camera access error:", error);
@@ -171,13 +157,17 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 } else {
     alert("Your browser does not support camera access.");
 }
-resetBtn.addEventListener('click', () => {
-    scannedResult = null; // Clear the stored result
-    fileQrResult.textContent = ''; // Clear displayed result
-    fileSelector.value = ''; // Reset the file input
 
-    scanCount = 0; // Reset scan count
-    qrResultsTable.innerHTML = ''; // Clear the table
-    startBtn.disabled = false; // Enable the start button
-    scanner.start(); // Restart the scanner
+// Reset scanning process
+resetBtn.addEventListener('click', () => {
+    scannedResult = null;
+    fileQrResult.textContent = '';
+    fileSelector.value = '';
+    scanCount = 0;
+    qrResultsTable.innerHTML = '';
+    startBtn.disabled = false;
+    scanner.start();
 });
+
+// Initialize the scanner
+startScanner();
