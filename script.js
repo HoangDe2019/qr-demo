@@ -166,9 +166,11 @@ fileSelector.addEventListener('change', event => {
 
 // Camera Constraints
 const constraints = {
-    facingMode: { ideal: "environment" }, // Prefer rear camera
-    width: { ideal: 1280 },
-    height: { ideal: 720 }
+    video: {
+        facingMode: { ideal: "environment" }, // Prefer rear camera
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+    }
 };
 
 // Access the camera and start the scanner
