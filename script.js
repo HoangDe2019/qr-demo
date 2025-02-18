@@ -130,14 +130,26 @@ fileSelector.addEventListener('change', event => {
 });
 
 const constraints = {
-    video: { facingMode: "environment" } // Use the rear camera for better scanning
+    facingMode: { ideal: "environment" }, // Prefer rear camera, fallback to front camera
+    width: { ideal: 1280 },
+    height: { ideal: 720 }
 };
 
 
-navigator.mediaDevices.getUserMedia(constraints)
-    .then(stream => video.srcObject = stream)
-    .catch(error => console.error("Camera access denied:", error));
-
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(error => {
+            console.error("Camera access error:", error);
+            alert("Unable to access camera. Please ensure you have the necessary permissions.");
+            // Optionally switch to file scanning mode or show an alternative UI.
+        });
+} else {
+    alert("Your browser does not support camera access.");
+    // Optionally, provide a fallback like allowing users to scan a file.
+}
 
 resetBtn.addEventListener('click', () => {
     scannedResult = null; // Clear the stored result
