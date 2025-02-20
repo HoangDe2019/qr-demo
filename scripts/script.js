@@ -467,6 +467,13 @@ const getUserIP = async () => {
         let data = await response.json();
         return data.ip;
     } catch (error) {
+        Swal.fire({
+            icon: "error",
+            title: "Lỗi Truy Cập Camera!",
+            text: "Không thể truy cập camera. Vui lòng cấp quyền." + error,
+            confirmButtonText: "OK"
+        });
+
         return "Không xác định";
     }
 };
