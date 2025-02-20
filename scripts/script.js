@@ -83,7 +83,6 @@ const setResult = (element, result) => {
     lastScanTime = now;
 
     const deviceInfo = getDeviceInfo(); // Lấy thông tin thiết bị
-    const userIP = getUserIP(); // Lấy địa chỉ IP
     // Chuẩn bị thông tin hiển thị
     const deviceDetails = `
         <b>Thiết Bị:</b> ${deviceInfo.device} <br>
@@ -100,7 +99,7 @@ const setResult = (element, result) => {
         <td>${result.data}</td>
         <td>${new Date().toLocaleTimeString()}</td>
         <td>${deviceDetails.toString()}</td>
-        <td>${userIP.toString()}</td>
+        <td>${ipAddress.toString()}</td>
     `;
 
     element.textContent = result.data;
@@ -477,6 +476,24 @@ const getUserIP= () => {
         return "Không xác định";
     }
 };
+
+const getUserIP = () => {
+    return fetch("https://api64.ipify.org?format=json")
+        .then(response => response.json())  // Parse JSON
+        .then(data => data.ip)  // Extract IP
+        .catch(error => {
+            Swal.fire({
+                icon: "error",
+                title: "Lỗi Truy Cập!",
+                text: "Không thể lấy địa chỉ IP. Vui lòng thử lại. " + error,
+                confirmButtonText: "OK"
+            });
+            return "Không xác định";
+        });
+};
+
+// Example usage
+const ipAddress = getUserIP().then(ip => console.log("User IP:", ip));
 
 
 
