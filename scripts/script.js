@@ -141,12 +141,28 @@ const scanner = new QrScanner(video, result => setResult(camQrResult, result), {
 const initCamera = () => {
     QrScanner.listCameras(true).then(cameras => {
         if (cameras.length > 0) {
-            scanner.setCamera(cameras[0].id); // Use the first (default) camera
+            // Luôn tìm camera sau (rear camera)
+            let rearCamera = cameras.find(camera =>
+                camera.label.toLowerCase().includes("back") ||
+                camera.label.toLowerCase().includes("rear") ||
+                camera.label.toLowerCase().includes("environment")
+            ) || cameras[0]; // Nếu không tìm thấy, dùng camera đầu tiên
+
+            scanner.setCamera(rearCamera.id); // Chọn camera sau mặc định
+
+            camList.innerHTML = ""; // Xóa danh sách cũ trước khi cập nhật mới
             cameras.forEach(camera => {
                 const option = document.createElement('option');
                 option.value = camera.id;
-                option.text = camera.label;
+                option.text = camera.label || "Camera " + (camList.length + 1);
                 camList.appendChild(option);
+            });
+
+            camList.value = rearCamera.id; // Đặt mặc định là camera sau
+
+            // Sự kiện thay đổi camera
+            camList.addEventListener("change", event => {
+                scanner.setCamera(event.target.value);
             });
         } else {
             Swal.fire({
@@ -167,10 +183,10 @@ const startScanner = () => {
     });
 };
 
-// Handle camera switch
-camList.addEventListener('change', event => {
-    scanner.setCamera(event.target.value).then(updateFlashAvailability);
-});
+// // Handle camera switch
+// camList.addEventListener('change', event => {
+//     scanner.setCamera(event.target.value).then(updateFlashAvailability);
+// });
 
 // Toggle flash
 flashToggle.addEventListener('click', () => {

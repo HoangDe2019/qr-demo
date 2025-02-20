@@ -70,25 +70,6 @@
                 <button id="zoom-in" class="btn btn-primary">🔍 Zoom In</button>
                 <button id="zoom-out" class="btn btn-secondary">🔎 Zoom Out</button>
             </div>
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                <label for="scan-region-highlight-style-select" class="me-2">Chọn kiểu đánh dấu</label>
-                <select id="scan-region-highlight-style-select" class="form-select highlight-style-select">
-                    <option value="default-style">Kiểu mặc định</option>
-                    <option value="example-style-1">Kiểu tùy chỉnh 1</option>
-                    <option value="example-style-2">Kiểu tùy chỉnh 2</option>
-                </select>
-            </div>
-            <div class="mt-3 form-check">
-                <input id="show-scan-region" type="checkbox" class="form-check-input">
-                <label class="form-check-label" for="show-scan-region">Hiển thị vùng quét canvas</label>
-            </div>
-            <div class="mt-3">
-                <select id="inversion-mode-select" class="form-select inversion-mode-select">
-                    <option value="original">Quét màu gốc (QR đen trên nền sáng)</option>
-                    <option value="invert">Quét với màu đảo ngược (QR sáng trên nền tối)</option>
-                    <option value="both" selected>Quét tất cả</option>
-                </select>
-            </div>
         </div>
 
         <!-- Camera Settings and Results -->
@@ -101,7 +82,7 @@
                 <b>Camera ưa thích:</b>
                 <select id="cam-list" class="form-select">
                     <option value="environment" selected>Camera phía sau (mặc định)</option>
-                    <option value="user">Camera phía trước</option>
+<!--                    <option value="user">Camera phía trước</option>-->
                 </select>
             </div>
             <div>
@@ -149,7 +130,7 @@
     </table>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script type="module" src="./scripts/script.min.js"></script>
+<script type="module" src="./scripts/script.js"></script>
 </body>
 
 </html>
