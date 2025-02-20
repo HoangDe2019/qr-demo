@@ -46,9 +46,13 @@ navigator.mediaDevices.enumerateDevices().then(devices => {
     });
 }).catch(err => {
     camHasCamera.textContent = 'Không thể phát hiện thiết bị camera';
-    Swal.showValidationMessage(`
-        hiết bị của bạn không có camera hoặc bị lỗi: ${err}
-    `);
+    Swal.fire({
+        icon: "warning",
+        title: "Không tìm thấy máy ảnh!",
+        text: "Thiết bị của bạn không có camera hoặc bị lỗi.",
+        confirmButtonText: "OK"
+    });
+
 });
 
 // Functions
@@ -129,7 +133,13 @@ const initCamera = () => {
                 camList.appendChild(option);
             });
         } else {
-            Swal.showValidationMessage(`Không tìm thấy máy ảnh`);
+            Swal.fire({
+                icon: "warning",
+                title: "Không tìm thấy máy ảnh!",
+                text: "Thiết bị của bạn không có camera hoặc bị lỗi.",
+                confirmButtonText: "OK"
+            });
+
         }
     });
 };
@@ -158,7 +168,12 @@ flashToggle.addEventListener('click', () => {
                 .then(() => {
                     flashState.textContent = isFlashOn ? 'tắt' : 'bật';
                 }).catch(err => {
-                Swal.showValidationMessage(`Lỗi chuyển đổi flash: ${err}`);
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Không tìm thấy máy ảnh!",
+                        text: `Lỗi chuyển đổi flash: ${err}`,
+                        confirmButtonText: "OK"
+                    });
             });
         }
     } // Delay to prevent UI lag
@@ -202,10 +217,10 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             video.srcObject = stream;
-            videoTrack = stream.getVideoTracks()[0]; // Correctly assign the video track
+            videoTrack = stream.getVideoTracks()[0]; // Assign the correct track
 
             if (videoTrack) {
-                var capabilities = videoTrack.getCapabilities();
+                const capabilities = videoTrack.getCapabilities();
                 if (capabilities.zoom) {
                     zoomControl.min = capabilities.zoom.min;
                     zoomControl.max = capabilities.zoom.max;
@@ -214,26 +229,26 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     zoomValue.textContent = `${capabilities.zoom.min}x`;
                     zoomControl.style.display = 'block';
                 } else {
-                    zoomControl.style.display = 'none'; // Hide zoom controls if unsupported
+                    zoomControl.style.display = 'none'; // Hide zoom if not supported
                 }
             } else {
+                console.error("Video track is undefined, zoom will not work.");
                 Swal.fire({
                     icon: 'info',
                     title: 'Không hỗ trợ Zoom!',
                     text: 'Camera của bạn không hỗ trợ chức năng phóng to.',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'Đóng'
                 });
             }
 
-            initCamera(); // Initialize cameras once stream is available
+            initCamera(); // Initialize cameras after assigning track
         })
         .catch(error => {
-            // console.error("Camera access error:", error);
             Swal.fire({
                 icon: "error",
                 title: "Lỗi Truy Cập Camera!",
                 text: "Không thể truy cập camera. Vui lòng cấp quyền.",
-                confirmButtonText: "OK"
+                confirmButtonText: "Đóng"
             });
         });
 } else {
@@ -278,28 +293,31 @@ resetBtn.addEventListener('click', () => {
 
 const updateZoom = (zoomLevel) => {
     if (videoTrack) {
-        let zoomValueFixed = Math.min(2, Math.max(1, parseFloat(zoomLevel))); // Limit between 1x and 2x
+        let zoomValueFixed = Math.max(zoomControl.min, Math.min(zoomControl.max, parseFloat(zoomLevel)));
 
-        videoTrack.applyConstraints({advanced: [{zoom: zoomValueFixed}]})
+        videoTrack.applyConstraints({ advanced: [{ zoom: zoomValueFixed }] })
             .then(() => {
                 zoomValue.textContent = `${zoomValueFixed.toFixed(1)}x`; // Update display
-                zoomControl.value = zoomValueFixed;
+                zoomControl.value = zoomValueFixed; // Sync with slider
             })
-            .catch(err => Swal.fire({
-                icon: "error",
-                title: "Lỗi Zoom",
-                text: `Không thể điều chỉnh zoom: ${err}`,
-                confirmButtonText: "OK"
-            }));
+            .catch(err => {
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi Zoom",
+                    text: `Không thể điều chỉnh zoom: ${err}`,
+                    confirmButtonText: "OK"
+                });
+            });
     } else {
-        Swal.showValidationMessage({
-            icon: 'error',
-            title: 'Zoom bị lỗi!',
-            text: 'Không tìm thấy đoạn video nào, không thể áp dụng thu phóng.',
-            confirmButtonText: 'Đóng'
+        Swal.fire({
+            icon: "error",
+            title: "Lỗi Zoom",
+            text: `Không tìm thấy đoạn video nào, không thể áp dụng thu phóng`,
+            confirmButtonText: "Đóng"
         });
     }
 };
+
 
 
 zoomInBtn.addEventListener('click', () => {
@@ -311,6 +329,3 @@ zoomOutBtn.addEventListener('click', () => {
     let newZoom = parseFloat(zoomControl.value) - 0.2;
     updateZoom(newZoom);
 });
-
-// Initialize the scanner
-startScanner();
