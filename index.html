@@ -10,6 +10,23 @@
     <script src="scripts/bootstrap.bundle.min.js"></script>
 
     <style>
+        #qr-results-table {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        #qr-results-table th, #qr-results-table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 10px;
+        }
+
+        #qr-results-table tbody tr:hover {
+            background-color: #f8f9fa;
+            transition: 0.3s;
+        }
+
         .container {
             max-width: 1200px;
         }
@@ -111,17 +128,20 @@
     </div>
 
     <table id="qr-results-table" class="table table-bordered table-striped table-responsive">
-        <thead>
+        <thead class="table-dark text-center">
         <tr>
             <th>#</th>
             <th>QR Code</th>
             <th>Timestamp</th>
+            <th>Thiết Bị</th>
+            <th>Địa Chỉ IP</th>
         </tr>
         </thead>
         <tbody>
         <!-- QR scan results will be added here -->
         </tbody>
     </table>
+
 </div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="module" src="./scripts/script.min.js"></script>

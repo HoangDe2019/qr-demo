@@ -69,8 +69,6 @@ navigator.mediaDevices.enumerateDevices().then(devices => {
     });
 });
 
-
-
 // Functions
 const updateFlashAvailability = () => {
     scanner.hasFlash().then(hasFlash => {
@@ -79,46 +77,44 @@ const updateFlashAvailability = () => {
     });
 };
 
-const setResult = (element, result) => {
+const setResult = async (element, result) => {
     const now = Date.now();
     if (now - lastScanTime < 500) return; // Prevent excessive updates
     lastScanTime = now;
 
+    const deviceInfo = getDeviceInfo(); // Lấy thông tin thiết bị
+    const userIP = await getUserIP(); // Lấy địa chỉ IP
+    // Chuẩn bị thông tin hiển thị
+    const deviceDetails = `
+        <b>Thiết Bị:</b> ${deviceInfo.device} <br>
+        <b>Hệ Điều Hành:</b> ${deviceInfo.os} <br>
+        <b>Trình Duyệt:</b> ${deviceInfo.browser} <br>
+        <b>Độ Phân Giải:</b> ${deviceInfo.screenResolution} <br>
+        <b>Ngôn Ngữ:</b> ${deviceInfo.browserLanguage}
+    `;
+
     // Add the result to the table
     const row = qrResultsTable.insertRow();
-    const cellIndex = row.insertCell(0);
-    const cellQrCode = row.insertCell(1);
-    const cellTimestamp = row.insertCell(2);
+    row.innerHTML = `
+        <td>${scanCount + 1}</td>
+        <td>${result.data}</td>
+        <td>${new Date().toLocaleTimeString()}</td>
+        <td>${deviceDetails}</td>
+        <td>${userIP}</td>
+    `;
 
-    cellIndex.textContent = scanCount;
-    cellQrCode.textContent = result.data;
-    cellTimestamp.textContent = new Date().toLocaleTimeString();
-
-    // Update QR result on the UI
     element.textContent = result.data;
     camQrResultTimestamp.textContent = new Date().toLocaleTimeString();
-
     scanCount++;
 
-    // Stop the scanner if max scan count reached
+    // Dừng scanner nếu đạt giới hạn
     if (scanCount >= maxScanCount) {
         scanner.stop();
         Swal.fire({
             title: "Đã đạt giới hạn quét!",
             text: "Vui lòng đặt lại để quét tiếp!",
             icon: "warning",
-            showCancelButton: false,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Xác nhận đóng"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: "Đóng thành công!",
-                    text: "Yêu cầu đã được thực hiện",
-                    icon: "success"
-                });
-            }
+            confirmButtonText: "OK"
         });
         startBtn.disabled = false;
     }
@@ -419,3 +415,61 @@ const startCamera = (deviceId) => {
             });
         });
 };
+
+const getDeviceInfo = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    let device = "Không xác định";
+    let os = "Không xác định";
+    let browser = "Không xác định";
+
+    // Xác định thiết bị
+    if (/android/.test(userAgent)) device = "Android";
+    if (/iphone|ipad|ipod/.test(userAgent)) device = "iOS";
+    if (/windows/.test(userAgent)) device = "Windows PC";
+    if (/macintosh|mac os x/.test(userAgent)) device = "MacOS";
+    if (/linux/.test(userAgent)) device = "Linux";
+
+    // Xác định hệ điều hành
+    if (/windows nt 10/.test(userAgent)) os = "Windows 10";
+    if (/windows nt 6.3/.test(userAgent)) os = "Windows 8.1";
+    if (/windows nt 6.1/.test(userAgent)) os = "Windows 7";
+    if (/mac os x/.test(userAgent)) os = "MacOS";
+    if (/android/.test(userAgent)) os = "Android";
+    if (/iphone|ipad|ipod/.test(userAgent)) os = "iOS";
+    if (/linux/.test(userAgent)) os = "Linux";
+
+    // Xác định trình duyệt
+    if (userAgent.includes("edg")) browser = "Microsoft Edge";
+    if (userAgent.includes("opr") || userAgent.includes("opera")) browser = "Opera";
+    if (userAgent.includes("chrome") && !userAgent.includes("edg")) browser = "Google Chrome";
+    if (userAgent.includes("safari") && !userAgent.includes("chrome")) browser = "Safari";
+    if (userAgent.includes("firefox")) browser = "Mozilla Firefox";
+    if (userAgent.includes("msie") || userAgent.includes("trident")) browser = "Internet Explorer";
+
+    // Lấy độ phân giải màn hình
+    const screenResolution = `${window.screen.width} x ${window.screen.height}`;
+
+    // Lấy ngôn ngữ trình duyệt
+    const browserLanguage = navigator.language || navigator.userLanguage;
+
+    return {
+        device,
+        os,
+        browser,
+        screenResolution,
+        browserLanguage
+    };
+};
+
+const getUserIP = async () => {
+    try {
+        let response = await fetch("https://api64.ipify.org?format=json");
+        let data = await response.json();
+        return data.ip;
+    } catch (error) {
+        return "Không xác định";
+    }
+};
+
+
+
