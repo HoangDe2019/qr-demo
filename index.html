@@ -1,78 +1,117 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo Quét QR CCCD</title>
-    <link href="scripts/bootstrap.min.css" rel="stylesheet"/>
+    <title>QR Code Scanner</title>
+
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="scripts/bootstrap.min.css"/>
+    <link rel="stylesheet" href="scripts/animate.min.css"/>
+    <link rel="stylesheet" href="scripts/aos.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+
+    <!-- jQuery & Bootstrap JS -->
     <script src="scripts/jquery-3.6.0.min.js"></script>
     <script src="scripts/bootstrap.bundle.min.js"></script>
+    <script src="scripts/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        #qr-results-table {
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+        /* 🔥 Gradient Background */
+        body {
+            background: linear-gradient(to right, #141e30, #243b55);
+            color: white;
+            font-family: 'Poppins', sans-serif;
         }
 
-        #qr-results-table th, #qr-results-table td {
-            text-align: center;
-            vertical-align: middle;
-            padding: 10px;
-        }
-
-        #qr-results-table tbody tr:hover {
-            background-color: #f8f9fa;
-            transition: 0.3s;
-        }
-
+        /* 🎨 Glassmorphism Container */
         .container {
-            max-width: 1200px;
+            max-width: 1000px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1.2s ease-in-out;
         }
 
-        hr {
-            margin-top: 32px;
-        }
-
+        /* 📸 Video Box */
         .video-container {
             position: relative;
             margin-bottom: 20px;
         }
-
         .video-container video {
             width: 100%;
-            border: 1px solid #ccc;
-            filter: brightness(1.5) contrast(1.2);
+            border-radius: 8px;
+            border: 2px solid #17a2b8;
+            box-shadow: 0 0 10px rgba(23, 162, 184, 0.7);
         }
 
-        .section-header {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+        /* 🖼 Table Styling */
+        #qr-results-table {
+            background: white;
+            color: black;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
         }
-
-        .row {
-            display: flex;
-            justify-content: space-between;
-        }
-
-        table th,
-        table td {
+        #qr-results-table th, #qr-results-table td {
+            text-align: center;
             vertical-align: middle;
+            padding: 12px;
+        }
+        #qr-results-table tbody tr:hover {
+            background-color: rgba(23, 162, 184, 0.1);
+            transition: 0.3s;
+        }
+
+        /* 🏆 Button Hover Effects */
+        button {
+            transition: all 0.3s ease-in-out;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        /* 🏆 Custom Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 📱 Responsive Adjustments */
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                margin-top: 5px;
+                width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
-<div class="container mt-5">
-    <!-- Header Section -->
-    <h1 class="text-center mb-4">Demo Quét Mã QR</h1>
+<div class="container mt-5" data-aos="fade-up">
+    <!-- 🌟 Header -->
+    <h1 class="text-center mb-4 animate__animated animate__fadeInDown">
+        <i class="fas fa-qrcode"></i> Demo Quét Mã QR
+    </h1>
 
-    <!-- Webcam Scanning Section -->
+    <!-- 📸 Webcam Scanner -->
     <div class="row mb-5">
         <div class="col-lg-6 col-md-12">
             <h3 class="section-header">Quét từ Webcam:</h3>
-            <div id="video-container" class="video-container">
+            <div id="video-container" class="video-container" data-aos="zoom-in">
                 <video id="qr-video"></video>
             </div>
             <div class="mt-3">
@@ -83,33 +122,24 @@
             </div>
         </div>
 
-        <!-- Camera Settings and Results -->
+        <!-- 🎛 Camera Settings -->
         <div class="col-lg-6 col-md-12">
             <h4 class="section-header">Cài đặt Camera</h4>
-            <div>
-                <b>Thiết bị có camera: </b><span id="cam-has-camera"></span>
-            </div>
+            <div><b>Thiết bị có camera:</b> <span id="cam-has-camera"></span></div>
             <div class="mb-3">
                 <b>Camera ưa thích:</b>
                 <select id="cam-list" class="form-select">
-                    <option value="environment" selected>Camera phía sau (mặc định)</option>
-<!--                    <option value="user">Camera phía trước</option>-->
+                    <option value="" disabled>--</option>
                 </select>
             </div>
-            <div>
-                <b>Camera có đèn flash: </b><span id="cam-has-flash"></span>
-            </div>
-            <button id="flash-toggle" class="btn btn-outline-primary mt-2">📸 Đèn flash: <span
-                    id="flash-state">tắt</span></button>
+            <div><b>Camera có đèn flash:</b> <span id="cam-has-flash"></span></div>
+            <button id="flash-toggle" class="btn btn-outline-primary mt-2">📸 Đèn flash: <span id="flash-state">tắt</span></button>
 
             <hr>
 
-            <div>
-                <b>Mã QR phát hiện: </b><span id="cam-qr-result">Chưa có</span>
-            </div>
-            <div>
-                <b>Phát hiện lần cuối vào: </b><span id="cam-qr-result-timestamp"></span>
-            </div>
+            <div><b>Mã QR phát hiện:</b> <span id="cam-qr-result">Chưa có</span></div>
+            <div><b>Phát hiện lần cuối vào:</b> <span id="cam-qr-result-timestamp"></span></div>
+
             <div class="custom-button-group mt-3">
                 <button id="start-button" class="btn btn-success w-100">Bắt đầu</button>
                 <button id="stop-button" class="btn btn-danger ms-2 w-100">Dừng</button>
@@ -118,16 +148,13 @@
         </div>
     </div>
 
-    <!-- File Scanning Section -->
+    <!-- 📂 File Upload -->
     <h3 class="section-header">Quét từ File:</h3>
-    <div class="mb-3">
-        <input type="file" id="file-selector" class="form-control">
-    </div>
-    <div class="mb-3">
-        <b>Mã QR phát hiện: </b><span id="file-qr-result">Chưa có</span>
-    </div>
+    <div class="mb-3"><input type="file" id="file-selector" class="form-control"></div>
+    <div class="mb-3"><b>Mã QR phát hiện:</b> <span id="file-qr-result">Chưa có</span></div>
 
-    <table id="qr-results-table" class="table table-bordered table-striped table-responsive">
+    <!-- 📊 QR Scan Results Table -->
+    <table id="qr-results-table" class="table table-bordered table-striped table-responsive animate__animated animate__fadeIn">
         <thead class="table-dark text-center">
         <tr>
             <th>#</th>
@@ -137,14 +164,16 @@
             <th>Địa Chỉ IP</th>
         </tr>
         </thead>
-        <tbody>
-        <!-- QR scan results will be added here -->
-        </tbody>
+        <tbody></tbody>
     </table>
-
 </div>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function () {
+        AOS.init({ duration: 1000, once: true });
+    });
+</script>
+
 <script type="module" src="./scripts/script.min.js"></script>
 </body>
-
 </html>
