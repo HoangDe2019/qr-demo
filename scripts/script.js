@@ -15,6 +15,9 @@ const fileQrResult = document.getElementById('file-qr-result');
 const resetBtn = document.getElementById('reset-button');
 const qrResultsTable = document.getElementById('qr-results-table').getElementsByTagName('tbody')[0];
 const startBtn = document.getElementById('start-button');
+const zoomControl = document.getElementById('zoom-control');
+const zoomValue = document.getElementById('zoom-value');
+let videoTrack; // Store video track
 
 // Variables
 let scanCount = 0;
@@ -179,6 +182,19 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         .then(stream => {
             video.srcObject = stream;
             initCamera(); // Initialize cameras once stream is available
+
+            // Check if zoom is supported
+            const capabilities = videoTrack.getCapabilities();
+            if (capabilities.zoom) {
+                zoomControl.min = capabilities.zoom.min;
+                zoomControl.max = capabilities.zoom.max;
+                zoomControl.step = 0.1;
+                zoomControl.value = capabilities.zoom.min; // Default zoom level
+                zoomValue.textContent = `${capabilities.zoom.min}x`;
+                zoomControl.style.display = 'block';
+            } else {
+                zoomControl.style.display = 'none';
+            }
         })
         .catch(error => {
             console.error("Camera access error:", error);
@@ -187,6 +203,11 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 } else {
     alert("Your browser does not support camera access.");
 }
+
+zoomControl.addEventListener('input', (event) => {
+    updateZoom(event.target.value);
+});
+
 
 // Reset scanning process
 resetBtn.addEventListener('click', () => {
@@ -198,6 +219,20 @@ resetBtn.addEventListener('click', () => {
     startBtn.disabled = false;
     scanner.start();
 });
+
+const updateZoom = (zoomLevel) => {
+    if (videoTrack) {
+        const capabilities = videoTrack.getCapabilities();
+        if (capabilities.zoom) {
+            videoTrack.applyConstraints({ advanced: [{ zoom: zoomLevel }] })
+                .then(() => {
+                    zoomValue.textContent = `${zoomLevel}x`;
+                })
+                .catch(err => console.error('Zoom error:', err));
+        }
+    }
+};
+
 
 // Initialize the scanner
 startScanner();
