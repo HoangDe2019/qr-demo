@@ -1,4 +1,5 @@
 import QrScanner from "./qr-scanner.min.js";
+import Swal from "sweetalert2";
 
 // DOM elements
 const video = document.getElementById('qr-video');
@@ -44,6 +45,13 @@ navigator.mediaDevices.enumerateDevices().then(devices => {
 }).catch(err => {
     console.error('Error enumerating devices:', err);
     camHasCamera.textContent = 'Không thể phát hiện thiết bị camera';
+    Swal.fire({
+        icon: 'warning',
+        title: 'Không tìm thấy camera!',
+        text: 'Thiết bị của bạn không có camera hoặc bị lỗi.',
+        confirmButtonText: 'OK'
+    });
+
 });
 
 // Functions
@@ -78,7 +86,12 @@ const setResult = (element, result) => {
     // Stop the scanner if max scan count reached
     if (scanCount >= maxScanCount) {
         scanner.stop();
-        alert("Maximum scan limit reached. Please reset to scan again.");
+        Swal.fire({
+            icon: 'info',
+            title: 'Đã đạt giới hạn quét!',
+            text: 'Vui lòng đặt lại để quét tiếp.',
+            confirmButtonText: 'OK'
+        });
         startBtn.disabled = false;
     }
 };
@@ -181,20 +194,30 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             video.srcObject = stream;
-            initCamera(); // Initialize cameras once stream is available
-
-            // Check if zoom is supported
-            const capabilities = videoTrack.getCapabilities();
-            if (capabilities.zoom) {
-                zoomControl.min = capabilities.zoom.min;
-                zoomControl.max = capabilities.zoom.max;
-                zoomControl.step = 0.1;
-                zoomControl.value = capabilities.zoom.min; // Default zoom level
-                zoomValue.textContent = `${capabilities.zoom.min}x`;
-                zoomControl.style.display = 'block';
+            videoTrack = stream.getVideoTracks()[0]; // Correctly assign the video track
+            if (videoTrack) {
+                const capabilities = videoTrack.getCapabilities();
+                if (capabilities.zoom) {
+                    zoomControl.min = capabilities.zoom.min;
+                    zoomControl.max = capabilities.zoom.max;
+                    zoomControl.step = 0.1;
+                    zoomControl.value = capabilities.zoom.min; // Set default zoom
+                    zoomValue.textContent = `${capabilities.zoom.min}x`;
+                    zoomControl.style.display = 'block';
+                } else {
+                    zoomControl.style.display = 'none'; // Hide zoom control if not supported
+                }
             } else {
-                zoomControl.style.display = 'none';
+                console.error("Video track is undefined, zoom will not work.");
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Không hỗ trợ Zoom!',
+                    text: 'Camera của bạn không hỗ trợ chức năng phóng to.',
+                    confirmButtonText: 'OK'
+                });
             }
+
+            initCamera(); // Initialize cameras once stream is available
         })
         .catch(error => {
             console.error("Camera access error:", error);
@@ -224,14 +247,21 @@ const updateZoom = (zoomLevel) => {
     if (videoTrack) {
         const capabilities = videoTrack.getCapabilities();
         if (capabilities.zoom) {
-            videoTrack.applyConstraints({ advanced: [{ zoom: zoomLevel }] })
+            console.log(`Applying zoom: ${zoomLevel}`);
+            videoTrack.applyConstraints({ advanced: [{ zoom: parseFloat(zoomLevel) }] })
                 .then(() => {
                     zoomValue.textContent = `${zoomLevel}x`;
+                    console.log(`Zoom set to: ${zoomLevel}x`);
                 })
                 .catch(err => console.error('Zoom error:', err));
+        } else {
+            console.warn("Zoom is not supported on this device.");
         }
+    } else {
+        console.error("No video track found, zoom cannot be applied.");
     }
 };
+
 
 
 // Initialize the scanner
