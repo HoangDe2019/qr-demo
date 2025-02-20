@@ -2,8 +2,8 @@ import QrScanner from "./qr-scanner.min.js";
 
 // DOM elements
 const video = document.getElementById('qr-video');
-const videoContainer = document.getElementById('video-container');
-const camHasCamera = document.getElementById('cam-has-camera');
+// const videoContainer = document.getElementById('video-container');
+// const camHasCamera = document.getElementById('cam-has-camera');
 const camList = document.getElementById('cam-list');
 const camHasFlash = document.getElementById('cam-has-flash');
 const flashToggle = document.getElementById('flash-toggle');
@@ -28,32 +28,81 @@ const maxScanCount = 10;
 let lastScanTime;
 let scannedResult = null;
 
-// Check if the device has cameras
+// Initialize cameras and set default to rear camera
 navigator.mediaDevices.enumerateDevices().then(devices => {
     const cameras = devices.filter(device => device.kind === 'videoinput');
-    const hasCamera = cameras.length > 0;
 
-    // Display camera information
-    camHasCamera.textContent = hasCamera ? 'Có' : 'Không';
-    camHasFlash.textContent = cameras.some(device => device.getCapabilities && device.getCapabilities().torch) ? 'Có' : 'Không';
+    if (cameras.length > 0) {
+        let rearCamera = cameras.find(camera => camera.label.toLowerCase().includes("back")) || cameras[0];
 
-    // Populate the camera list
-    cameras.forEach((device, index) => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.textContent = device.label || `Camera ${index + 1}`;
-        camList.appendChild(option);
-    });
+        startCamera(rearCamera.deviceId); // Default to rear camera
+
+        cameras.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.textContent = device.label || `Camera ${index + 1}`;
+            camList.appendChild(option);
+        });
+
+        camList.addEventListener('change', event => {
+            startCamera(event.target.value);
+        });
+    } else {
+        Swal.fire({
+            icon: "warning",
+            title: "Không tìm thấy máy ảnh!",
+            text: "Thiết bị của bạn không có camera hoặc bị lỗi.",
+            confirmButtonText: "OK"
+        });
+    }
 }).catch(err => {
-    camHasCamera.textContent = 'Không thể phát hiện thiết bị camera';
+    console.error("Error enumerating devices:", err);
     Swal.fire({
-        icon: "warning",
-        title: "Không tìm thấy máy ảnh!",
-        text: "Thiết bị của bạn không có camera hoặc bị lỗi.",
+        icon: "error",
+        title: "Lỗi Truy Cập!",
+        text: "Không thể lấy danh sách camera.",
         confirmButtonText: "OK"
     });
-
 });
+
+// Initialize cameras and set default to rear camera
+navigator.mediaDevices.enumerateDevices().then(devices => {
+    const cameras = devices.filter(device => device.kind === 'videoinput');
+
+    if (cameras.length > 0) {
+        let rearCamera = cameras.find(camera => camera.label.toLowerCase().includes("back")) || cameras[0];
+
+        startCamera(rearCamera.deviceId); // Default to rear camera
+
+        cameras.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.textContent = device.label || `Camera ${index + 1}`;
+            camList.appendChild(option);
+        });
+
+        camList.addEventListener('change', event => {
+            startCamera(event.target.value);
+        });
+    } else {
+        Swal.fire({
+            icon: "warning",
+            title: "Không tìm thấy máy ảnh!",
+            text: "Thiết bị của bạn không có camera hoặc bị lỗi.",
+            confirmButtonText: "OK"
+        });
+    }
+}).catch(err => {
+    console.error("Error enumerating devices:", err);
+    Swal.fire({
+        icon: "error",
+        title: "Lỗi Truy Cập!",
+        text: "Không thể lấy danh sách camera.",
+        confirmButtonText: "OK"
+    });
+});
+
+
 
 // Functions
 const updateFlashAvailability = () => {
@@ -158,26 +207,48 @@ camList.addEventListener('change', event => {
 
 // Toggle flash
 flashToggle.addEventListener('click', () => {
-    const stream = videoContainer.srcObject;
-    if (stream && stream.getVideoTracks().length > 0) {
-        const track = stream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities();
-        if (capabilities.torch) {
-            const isFlashOn = flashState.textContent === 'bật';
-            track.applyConstraints({advanced: [{torch: !isFlashOn}]})
-                .then(() => {
-                    flashState.textContent = isFlashOn ? 'tắt' : 'bật';
-                }).catch(err => {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Không tìm thấy máy ảnh!",
-                        text: `Lỗi chuyển đổi flash: ${err}`,
-                        confirmButtonText: "OK"
-                    });
+    const stream = video.srcObject; // Corrected from `videoContainer.srcObject`
+
+    if (!stream || stream.getVideoTracks().length === 0) {
+        Swal.fire({
+            icon: "error",
+            title: "Lỗi Camera!",
+            text: "Không tìm thấy luồng video hợp lệ.",
+            confirmButtonText: "OK"
+        });
+        return;
+    }
+
+    const track = stream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+
+    if (!capabilities.torch) {
+        Swal.fire({
+            icon: "info",
+            title: "Không hỗ trợ Flash!",
+            text: "Camera của bạn không hỗ trợ bật/tắt đèn flash.",
+            confirmButtonText: "OK"
+        });
+        return;
+    }
+
+    // Get the current state from applyConstraints
+    const isFlashOn = flashState.textContent === 'bật';
+
+    track.applyConstraints({ advanced: [{ torch: !isFlashOn }] })
+        .then(() => {
+            flashState.textContent = !isFlashOn ? 'bật' : 'tắt';
+        })
+        .catch(err => {
+            Swal.fire({
+                icon: "warning",
+                title: "Không thể bật/tắt đèn flash!",
+                text: `Lỗi: ${err.message || err}`,
+                confirmButtonText: "OK"
             });
-        }
-    } // Delay to prevent UI lag
+        });
 });
+
 
 // Handle start/stop buttons
 startBtn.addEventListener('click', startScanner);
@@ -329,3 +400,32 @@ zoomOutBtn.addEventListener('click', () => {
     let newZoom = parseFloat(zoomControl.value) - 0.2;
     updateZoom(newZoom);
 });
+
+// Function to start the selected camera
+const startCamera = (deviceId) => {
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop()); // Stop old stream
+    }
+
+    navigator.mediaDevices.getUserMedia({
+        video: { deviceId: deviceId ? { exact: deviceId } : undefined }
+    })
+        .then(stream => {
+            video.srcObject = stream;
+            videoTrack = stream.getVideoTracks()[0];
+
+            if (videoTrack) {
+                const capabilities = videoTrack.getCapabilities();
+                camHasFlash.textContent = capabilities.torch ? 'Có' : 'Không';
+            }
+        })
+        .catch(err => {
+            console.error("Camera access error:", err);
+            Swal.fire({
+                icon: "error",
+                title: "Lỗi Truy Cập Camera!",
+                text: "Không thể truy cập camera. Vui lòng cấp quyền.",
+                confirmButtonText: "OK"
+            });
+        });
+};
