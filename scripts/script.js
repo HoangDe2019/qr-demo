@@ -77,7 +77,7 @@ const updateFlashAvailability = () => {
     });
 };
 
-const setResult = (element, result) => {
+const setResult = async (element, result) => {
     const now = Date.now();
     if (now - lastScanTime < 500) return; // Prevent excessive updates
     lastScanTime = now;
@@ -94,6 +94,7 @@ const setResult = (element, result) => {
 
     // Add the result to the table
     const row = qrResultsTable.insertRow();
+    const ipAddress = await getUserIP();
     row.innerHTML = `
         <td>${scanCount + 1}</td>
         <td>${result.data}</td>
@@ -460,40 +461,14 @@ const getDeviceInfo = () => {
     };
 };
 
-const getUserIP= () => {
+const getUserIP = async () => {
     try {
-        let response = fetch("https://api64.ipify.org?format=json");
-        let data = response.json();
+        let response = await fetch("https://api64.ipify.org?format=json");
+        let data = await response.json();
         return data.ip;
     } catch (error) {
-        Swal.fire({
-            icon: "error",
-            title: "Lỗi Truy Cập Camera!",
-            text: "Không thể truy cập camera. Vui lòng cấp quyền." + error,
-            confirmButtonText: "OK"
-        });
-
         return "Không xác định";
     }
 };
-
-const getUserIP = () => {
-    return fetch("https://api64.ipify.org?format=json")
-        .then(response => response.json())  // Parse JSON
-        .then(data => data.ip)  // Extract IP
-        .catch(error => {
-            Swal.fire({
-                icon: "error",
-                title: "Lỗi Truy Cập!",
-                text: "Không thể lấy địa chỉ IP. Vui lòng thử lại. " + error,
-                confirmButtonText: "OK"
-            });
-            return "Không xác định";
-        });
-};
-
-// Example usage
-const ipAddress = getUserIP().then(ip => console.log("User IP:", ip));
-
 
 
