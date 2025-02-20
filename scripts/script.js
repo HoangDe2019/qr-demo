@@ -77,13 +77,13 @@ const updateFlashAvailability = () => {
     });
 };
 
-const setResult = async (element, result) => {
+const setResult = (element, result) => {
     const now = Date.now();
     if (now - lastScanTime < 500) return; // Prevent excessive updates
     lastScanTime = now;
 
     const deviceInfo = getDeviceInfo(); // Lấy thông tin thiết bị
-    const userIP = await getUserIP(); // Lấy địa chỉ IP
+    const userIP = getUserIP(); // Lấy địa chỉ IP
     // Chuẩn bị thông tin hiển thị
     const deviceDetails = `
         <b>Thiết Bị:</b> ${deviceInfo.device} <br>
@@ -99,8 +99,8 @@ const setResult = async (element, result) => {
         <td>${scanCount + 1}</td>
         <td>${result.data}</td>
         <td>${new Date().toLocaleTimeString()}</td>
-        <td>${deviceDetails}</td>
-        <td>${userIP}</td>
+        <td>${deviceDetails.toString()}</td>
+        <td>${userIP.toString()}</td>
     `;
 
     element.textContent = result.data;
@@ -461,10 +461,10 @@ const getDeviceInfo = () => {
     };
 };
 
-const getUserIP = async () => {
+const getUserIP= () => {
     try {
-        let response = await fetch("https://api64.ipify.org?format=json");
-        let data = await response.json();
+        let response = fetch("https://api64.ipify.org?format=json");
+        let data = response.json();
         return data.ip;
     } catch (error) {
         Swal.fire({
