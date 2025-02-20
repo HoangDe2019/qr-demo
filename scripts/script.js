@@ -35,26 +35,39 @@ $(document).ready(async function () {
     function initCamera() {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             const cameras = devices.filter(device => device.kind === 'videoinput');
+
             if (cameras.length === 0) {
                 showError("Không tìm thấy camera trên thiết bị của bạn.");
                 return;
             }
 
+            camList.empty(); // Xóa danh sách cũ trước khi thêm mới
+
+            // 🔹 Lặp qua danh sách camera và thêm vào <select>
+            cameras.forEach((device, index) => {
+                let cameraLabel = device.label || `📷 Camera ${index + 1}`;
+
+                // 🔥 Dịch nhãn camera nếu có thể
+                if (cameraLabel.toLowerCase().includes("front")) {
+                    cameraLabel = "📷 Camera Trước";
+                } else if (cameraLabel.toLowerCase().includes("back") || cameraLabel.toLowerCase().includes("rear")) {
+                    cameraLabel = "📷 Camera Sau";
+                }
+
+                camList.append(new Option(cameraLabel, device.deviceId));
+            });
+
+            // 🔹 Chọn mặc định camera sau nếu có
             let rearCamera = cameras.find(c =>
                 c.label.toLowerCase().includes("back") ||
                 c.label.toLowerCase().includes("rear") ||
                 c.label.toLowerCase().includes("environment")
             ) || cameras[0];
 
-            camList.empty();
-            cameras.forEach((device, index) => {
-                camList.append(new Option(device.label || `Camera ${index + 1}`, device.deviceId));
-            });
-
             camList.val(rearCamera.deviceId);
             startCamera(rearCamera.deviceId);
 
-            // ✅ Fix: Ensure camera switches when user selects another camera
+            // 🎯 Thay đổi camera khi chọn từ dropdown
             camList.off("change").on("change", function () {
                 startCamera($(this).val());
             });
@@ -69,10 +82,11 @@ $(document).ready(async function () {
 
         navigator.mediaDevices.getUserMedia({
             video: {
-                deviceId: { exact: deviceId },
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 60, max: 120 }
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                facingMode: { ideal: "environment" }, // 🔹 Cố gắng chọn camera sau
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                frameRate: {ideal: 60, max: 120}
             }
         }).then(stream => {
             video[0].srcObject = stream;
@@ -80,6 +94,8 @@ $(document).ready(async function () {
 
             let capabilities = videoTrack.getCapabilities();
             camHasFlash.text(capabilities.torch ? "Có" : "Không");
+
+            // 🔹 Chỉ bật flash nếu camera hỗ trợ
             flashToggle.prop("disabled", !capabilities.torch);
 
             if (capabilities.zoom) {
@@ -98,6 +114,7 @@ $(document).ready(async function () {
             if (scanner) {
                 scanner.stop();
             }
+
             scanner = new QrScanner(video[0], result => setResult(camQrResult, result), {
                 onDecodeError: error => camQrResult.text(`Lỗi: ${error}`).css("color", "red"),
                 highlightScanRegion: true,
@@ -106,6 +123,7 @@ $(document).ready(async function () {
                 maxScansPerSecond: 15,
                 preferredResolution: 1920
             });
+
             scanner.start();
         }).catch(err => showError(`Lỗi truy cập camera: ${err.message}`));
     }
