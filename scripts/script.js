@@ -30,17 +30,26 @@ $(document).ready(async function () {
     function initCamera() {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             const cameras = devices.filter(device => device.kind === 'videoinput');
-            if (cameras.length === 0) {
+            if (cameras.length <= 0) {
                 showError("Không tìm thấy camera trên thiết bị của bạn.");
                 return;
             }
 
-            let rearCamera = cameras.find(c => c.label.toLowerCase().includes("back")) || cameras[0];
+            // Luôn tìm camera sau (rear camera)
+            let rearCamera = cameras.find(camera =>
+                camera.label.toLowerCase().includes("back") ||
+                camera.label.toLowerCase().includes("rear") ||
+                camera.label.toLowerCase().includes("environment")
+            ) || cameras[0]; // Nếu không tìm thấy, dùng camera đầu tiên
+            //
             startCamera(rearCamera.deviceId);
 
-            camList.empty();
-            cameras.forEach((device, index) => {
-                camList.append(new Option(device.label || `Camera ${index + 1}`, device.deviceId));
+            camList.innerHTML = ""; // Xóa danh sách cũ trước khi cập nhật mới
+            cameras.forEach(camera => {
+                const option = document.createElement('option');
+                option.value = camera.id;
+                option.text = camera.label || "Camera " + (camList.length + 1);
+                camList.appendChild(option);
             });
 
             camList.val(rearCamera.deviceId).change(() => startCamera(camList.val()));
