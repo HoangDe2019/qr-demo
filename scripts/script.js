@@ -22,41 +22,38 @@ $(document).ready(async function () {
     let scanCount = 0;
     const maxScanCount = 10;
     let lastScanTime;
-    let userIP = await getUserIP(); // Fetch user IP at load
+    let userIP = await getUserIP();
 
-    // 🟢 **Initialize Camera & Device Info**
-    initCamera();
+    startBtn.click(() => {
+        startBtn.prop("disabled", true); // 🔴 Vô hiệu hóa khi bắt đầu
+        initCamera();
+    });
 
     function initCamera() {
         navigator.mediaDevices.enumerateDevices().then(devices => {
             const cameras = devices.filter(device => device.kind === 'videoinput');
-            if (cameras.length <= 0) {
+            if (cameras.length === 0) {
                 showError("Không tìm thấy camera trên thiết bị của bạn.");
                 return;
             }
 
-            // Luôn tìm camera sau (rear camera)
-            let rearCamera = cameras.find(camera =>
-                camera.label.toLowerCase().includes("back") ||
-                camera.label.toLowerCase().includes("rear") ||
-                camera.label.toLowerCase().includes("environment")
-            ) || cameras[0]; // Nếu không tìm thấy, dùng camera đầu tiên
-            //
+            let rearCamera = cameras.find(c =>
+                c.label.toLowerCase().includes("back") ||
+                c.label.toLowerCase().includes("rear") ||
+                c.label.toLowerCase().includes("environment")
+            ) || cameras[0];
+
             startCamera(rearCamera.deviceId);
 
-            camList.innerHTML = ""; // Xóa danh sách cũ trước khi cập nhật mới
-            cameras.forEach(camera => {
-                const option = document.createElement('option');
-                option.value = camera.id;
-                option.text = camera.label || "Camera " + (camList.length + 1);
-                camList.appendChild(option);
+            camList.empty();
+            cameras.forEach((device, index) => {
+                camList.append(new Option(device.label || `Camera ${index + 1}`, device.deviceId));
             });
 
             camList.val(rearCamera.deviceId).change(() => startCamera(camList.val()));
         }).catch(err => showError(`Lỗi lấy danh sách camera: ${err}`));
     }
 
-    // 🟢 **Start Camera**
     function startCamera(deviceId) {
         if (video[0].srcObject) video[0].srcObject.getTracks().forEach(track => track.stop());
 
@@ -73,6 +70,10 @@ $(document).ready(async function () {
 
             let capabilities = videoTrack.getCapabilities();
             camHasFlash.text(capabilities.torch ? "Có" : "Không");
+
+            // 🔴 Chỉ bật flash nếu có hỗ trợ
+            flashToggle.prop("disabled", !capabilities.torch);
+
             if (capabilities.zoom) {
                 zoomControl.attr({
                     min: capabilities.zoom.min,
@@ -87,7 +88,6 @@ $(document).ready(async function () {
         }).catch(err => showError(`Lỗi truy cập camera: ${err}`));
     }
 
-    // 🟢 **QR Scanner**
     const scanner = new QrScanner(video[0], result => setResult(camQrResult, result), {
         onDecodeError: error => camQrResult.text(`Lỗi: ${error}`).css("color", "red"),
         highlightScanRegion: true,
@@ -97,7 +97,6 @@ $(document).ready(async function () {
         preferredResolution: 1920
     });
 
-    // 🟢 **Set Result & Add To Table**
     async function setResult(element, result) {
         if (Date.now() - lastScanTime < 500) return;
         lastScanTime = Date.now();
@@ -123,19 +122,12 @@ $(document).ready(async function () {
         }
     }
 
-    // 🟢 **Start Scanner**
-    startBtn.click(() => {
-        scanner.start();
-        showSuccess("Bắt đầu quét!");
-    });
-
-    // 🟢 **Stop Scanner**
     $("#stop-button").click(() => {
         scanner.stop();
+        flashToggle.prop("disabled", true);
         showWarning("Dừng quét!");
     });
 
-    // 🟢 **Flash Toggle**
     flashToggle.click(() => {
         if (!videoTrack) return;
         const isFlashOn = flashState.text() === "bật";
@@ -145,7 +137,6 @@ $(document).ready(async function () {
         }).catch(err => showError(`Lỗi Flash: ${err}`));
     });
 
-    // 🟢 **Zoom Controls**
     zoomControl.on("input", () => updateZoom(parseFloat(zoomControl.val())));
     zoomInBtn.click(() => updateZoom(parseFloat(zoomControl.val()) + 0.2));
     zoomOutBtn.click(() => updateZoom(parseFloat(zoomControl.val()) - 0.2));
@@ -159,7 +150,6 @@ $(document).ready(async function () {
         }).catch(err => showError(`Lỗi Zoom: ${err}`));
     }
 
-    // 🟢 **Reset Scanner**
     resetBtn.click(() => {
         scanCount = 0;
         qrResultsTable.fadeOut(300, function () {
@@ -171,7 +161,6 @@ $(document).ready(async function () {
         scanner.start();
     });
 
-    // 🟢 **Fetch User IP**
     async function getUserIP() {
         try {
             let response = await fetch("https://api64.ipify.org?format=json");
@@ -182,7 +171,6 @@ $(document).ready(async function () {
         }
     }
 
-    // 🟢 **Get Device Info**
     function getDeviceInfo() {
         const userAgent = navigator.userAgent.toLowerCase();
         return {
@@ -192,7 +180,6 @@ $(document).ready(async function () {
         };
     }
 
-    // 🟢 **SweetAlert2 Helper Functions**
     function showSuccess(msg) { Swal.fire({ icon: "success", title: msg, showConfirmButton: false, timer: 1000 }); }
     function showWarning(msg) { Swal.fire({ icon: "warning", title: msg, showConfirmButton: false, timer: 1000 }); }
     function showError(msg) { Swal.fire({ icon: "error", title: "Lỗi!", text: msg, confirmButtonText: "OK" }); }
