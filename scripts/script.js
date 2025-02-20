@@ -1,5 +1,4 @@
 import QrScanner from "./qr-scanner.min.js";
-import Swal from "sweetalert2";
 
 // DOM elements
 const video = document.getElementById('qr-video');
