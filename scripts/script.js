@@ -13,6 +13,7 @@ $(document).ready(async function () {
     const resetBtn = $("#reset-button");
     const qrResultsTable = $("#qr-results-table tbody");
     const startBtn = $("#start-button");
+    const stopBtn = $("#stop-button");
     const zoomControl = $("#zoom-control");
     const zoomValue = $("#zoom-value");
     const zoomInBtn = $("#zoom-in");
@@ -23,9 +24,11 @@ $(document).ready(async function () {
     const maxScanCount = 10;
     let lastScanTime;
     let userIP = await getUserIP();
+    let scanner = null;
 
+    // ✅ Start Camera when clicking "Bắt đầu"
     startBtn.click(() => {
-        startBtn.prop("disabled", true); // 🔴 Vô hiệu hóa khi bắt đầu
+        startBtn.prop("disabled", true);
         initCamera();
     });
 
@@ -43,25 +46,32 @@ $(document).ready(async function () {
                 c.label.toLowerCase().includes("environment")
             ) || cameras[0];
 
-            startCamera(rearCamera.deviceId);
-
             camList.empty();
             cameras.forEach((device, index) => {
                 camList.append(new Option(device.label || `Camera ${index + 1}`, device.deviceId));
             });
 
-            camList.val(rearCamera.deviceId).change(() => startCamera(camList.val()));
-        }).catch(err => showError(`Lỗi lấy danh sách camera: ${err}`));
+            camList.val(rearCamera.deviceId);
+            startCamera(rearCamera.deviceId);
+
+            // ✅ Fix: Ensure camera switches when user selects another camera
+            camList.off("change").on("change", function () {
+                startCamera($(this).val());
+            });
+        }).catch(err => showError(`Lỗi lấy danh sách camera: ${err.message}`));
     }
 
     function startCamera(deviceId) {
-        if (video[0].srcObject) video[0].srcObject.getTracks().forEach(track => track.stop());
+        // ✅ Stop previous camera stream
+        if (video[0].srcObject) {
+            video[0].srcObject.getTracks().forEach(track => track.stop());
+        }
 
         navigator.mediaDevices.getUserMedia({
             video: {
                 deviceId: { exact: deviceId },
-                width: { ideal: 9999 },
-                height: { ideal: 9999 },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
                 frameRate: { ideal: 60, max: 120 }
             }
         }).then(stream => {
@@ -70,8 +80,6 @@ $(document).ready(async function () {
 
             let capabilities = videoTrack.getCapabilities();
             camHasFlash.text(capabilities.torch ? "Có" : "Không");
-
-            // 🔴 Chỉ bật flash nếu có hỗ trợ
             flashToggle.prop("disabled", !capabilities.torch);
 
             if (capabilities.zoom) {
@@ -85,17 +93,22 @@ $(document).ready(async function () {
             } else {
                 zoomControl.hide();
             }
-        }).catch(err => showError(`Lỗi truy cập camera: ${err}`));
-    }
 
-    const scanner = new QrScanner(video[0], result => setResult(camQrResult, result), {
-        onDecodeError: error => camQrResult.text(`Lỗi: ${error}`).css("color", "red"),
-        highlightScanRegion: true,
-        highlightCodeOutline: true,
-        returnDetailedScanResult: true,
-        maxScansPerSecond: 15,
-        preferredResolution: 1920
-    });
+            // ✅ Restart scanner when new camera is selected
+            if (scanner) {
+                scanner.stop();
+            }
+            scanner = new QrScanner(video[0], result => setResult(camQrResult, result), {
+                onDecodeError: error => camQrResult.text(`Lỗi: ${error}`).css("color", "red"),
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
+                returnDetailedScanResult: true,
+                maxScansPerSecond: 15,
+                preferredResolution: 1920
+            });
+            scanner.start();
+        }).catch(err => showError(`Lỗi truy cập camera: ${err.message}`));
+    }
 
     async function setResult(element, result) {
         if (Date.now() - lastScanTime < 500) return;
@@ -122,7 +135,7 @@ $(document).ready(async function () {
         }
     }
 
-    $("#stop-button").click(() => {
+    stopBtn.click(() => {
         scanner.stop();
         flashToggle.prop("disabled", true);
         showWarning("Dừng quét!");
@@ -134,7 +147,7 @@ $(document).ready(async function () {
         videoTrack.applyConstraints({ advanced: [{ torch: !isFlashOn }] }).then(() => {
             flashState.text(!isFlashOn ? "bật" : "tắt");
             showSuccess(`Flash ${isFlashOn ? "Tắt" : "Bật"}!`);
-        }).catch(err => showError(`Lỗi Flash: ${err}`));
+        }).catch(err => showError(`Lỗi Flash: ${err.message}`));
     });
 
     zoomControl.on("input", () => updateZoom(parseFloat(zoomControl.val())));
@@ -147,7 +160,7 @@ $(document).ready(async function () {
         videoTrack.applyConstraints({ advanced: [{ zoom: newZoom }] }).then(() => {
             zoomValue.text(`${newZoom.toFixed(1)}x`);
             zoomControl.val(newZoom);
-        }).catch(err => showError(`Lỗi Zoom: ${err}`));
+        }).catch(err => showError(`Lỗi Zoom: ${err.message}`));
     }
 
     resetBtn.click(() => {
