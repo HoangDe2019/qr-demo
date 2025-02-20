@@ -33,46 +33,13 @@ navigator.mediaDevices.enumerateDevices().then(devices => {
     const cameras = devices.filter(device => device.kind === 'videoinput');
 
     if (cameras.length > 0) {
-        let rearCamera = cameras.find(camera => camera.label.toLowerCase().includes("back")) || cameras[0];
+        let bestCamera = cameras[0]; // Mặc định chọn camera đầu tiên
+        let rearCamera = cameras.find(camera => camera.label.toLowerCase().includes("back"));
 
-        startCamera(rearCamera.deviceId); // Default to rear camera
-
-        cameras.forEach((device, index) => {
-            const option = document.createElement('option');
-            option.value = device.deviceId;
-            option.textContent = device.label || `Camera ${index + 1}`;
-            camList.appendChild(option);
-        });
-
-        camList.addEventListener('change', event => {
-            startCamera(event.target.value);
-        });
-    } else {
-        Swal.fire({
-            icon: "warning",
-            title: "Không tìm thấy máy ảnh!",
-            text: "Thiết bị của bạn không có camera hoặc bị lỗi.",
-            confirmButtonText: "OK"
-        });
-    }
-}).catch(err => {
-    console.error("Error enumerating devices:", err);
-    Swal.fire({
-        icon: "error",
-        title: "Lỗi Truy Cập!",
-        text: "Không thể lấy danh sách camera.",
-        confirmButtonText: "OK"
-    });
-});
-
-// Initialize cameras and set default to rear camera
-navigator.mediaDevices.enumerateDevices().then(devices => {
-    const cameras = devices.filter(device => device.kind === 'videoinput');
-
-    if (cameras.length > 0) {
-        let rearCamera = cameras.find(camera => camera.label.toLowerCase().includes("back")) || cameras[0];
-
-        startCamera(rearCamera.deviceId); // Default to rear camera
+        if (rearCamera) {
+            bestCamera = rearCamera; // Ưu tiên camera sau nếu có
+        }
+        startCamera(bestCamera.deviceId); // Default to rear camera
 
         cameras.forEach((device, index) => {
             const option = document.createElement('option');
@@ -372,12 +339,7 @@ const updateZoom = (zoomLevel) => {
                 zoomControl.value = zoomValueFixed; // Sync with slider
             })
             .catch(err => {
-                Swal.fire({
-                    icon: "error",
-                    title: "Lỗi Zoom",
-                    text: `Không thể điều chỉnh zoom: ${err}`,
-                    confirmButtonText: "OK"
-                });
+                console.error(err)
             });
     } else {
         Swal.fire({
@@ -388,8 +350,6 @@ const updateZoom = (zoomLevel) => {
         });
     }
 };
-
-
 
 zoomInBtn.addEventListener('click', () => {
     let newZoom = parseFloat(zoomControl.value) + 0.2;
@@ -408,7 +368,10 @@ const startCamera = (deviceId) => {
     }
 
     navigator.mediaDevices.getUserMedia({
-        video: { deviceId: deviceId ? { exact: deviceId } : undefined }
+        video: { deviceId: deviceId ? { exact: deviceId } : undefined },
+        width: { ideal: 9999 }, // Chọn max width
+        height: { ideal: 9999 }, // Chọn max height
+        frameRate: { ideal: 60, max: 120 } // Chọn FPS cao nếu có
     })
         .then(stream => {
             video.srcObject = stream;
@@ -417,6 +380,17 @@ const startCamera = (deviceId) => {
             if (videoTrack) {
                 const capabilities = videoTrack.getCapabilities();
                 camHasFlash.textContent = capabilities.torch ? 'Có' : 'Không';
+
+                if (capabilities.zoom) {
+                    zoomControl.min = capabilities.zoom.min;
+                    zoomControl.max = capabilities.zoom.max;
+                    zoomControl.step = 0.1;
+                    zoomControl.value = capabilities.zoom.min;
+                    zoomValue.textContent = `${capabilities.zoom.min}x`;
+                    zoomControl.style.display = 'block';
+                } else {
+                    zoomControl.style.display = 'none';
+                }
             }
         })
         .catch(err => {
