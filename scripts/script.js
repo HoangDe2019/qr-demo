@@ -192,6 +192,56 @@ $(document).ready(async function () {
         scanner.start();
     });
 
+    fileSelector.on("change", function (event) {
+        const file = event.target.files[0]; // Lấy file được chọn
+
+        if (!file) {
+            showError("Vui lòng chọn một file hợp lệ!");
+            return;
+        }
+
+        // ✅ Kiểm tra định dạng file hợp lệ (chỉ chấp nhận ảnh)
+        const allowedFormats = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+        if (!allowedFormats.includes(file.type)) {
+            showError("File không hợp lệ! Vui lòng chọn file ảnh (PNG, JPG, WEBP).");
+            return;
+        }
+
+        // 🟢 Đọc file ảnh để quét QR
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const imageData = e.target.result; // Lấy dữ liệu ảnh dưới dạng URL base64
+
+            // 📌 Dùng QrScanner để quét mã QR
+            QrScanner.scanImage(imageData, { returnDetailedScanResult: true })
+                .then(result => {
+                    fileQrResult.text(result.data); // Cập nhật kết quả quét QR lên giao diện
+                    addQRResultToTable(result.data, "Tải lên từ file"); // Thêm vào bảng kết quả
+                    showSuccess("Quét mã QR thành công từ file!");
+                })
+                .catch(err => {
+                    showError("Không tìm thấy mã QR trong ảnh! Hãy thử lại với ảnh khác.");
+                });
+        };
+
+        reader.readAsDataURL(file); // Đọc file dưới dạng URL base64
+    });
+
+
+    function addQRResultToTable(qrText, source) {
+        const newRow = `
+        <tr class="animate__animated animate__fadeIn">
+            <td>${scanCount + 1}</td>
+            <td>${qrText}</td>
+            <td>${new Date().toLocaleTimeString()}</td>
+            <td>${source}</td>
+            <td>${userIP}</td>
+        </tr>`;
+        qrResultsTable.append(newRow);
+        scanCount++;
+    }
+
+
     async function getUserIP() {
         try {
             let response = await fetch("https://api64.ipify.org?format=json");
